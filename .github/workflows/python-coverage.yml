@@ -1,0 +1,60 @@
+name: Python Coverage
+
+on:
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: python-coverage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  python-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # shallow clone to speed up checkout unless full history is required
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          # use a stable, supported 3.x version (adjust if your project requires a specific minor)
+          python-version: '3.11'
+
+      - name: Cache pip
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest==8.4.1 pytest-cov==6.2.1 coverage==7.9
+
+      - name: Run tests and generate coverage details
+        run: pytest --maxfail=1 -q --disable-warnings --cov=src
+
+      - name: Coverage comment
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          # token param for this action expects the repo token value
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # adjust thresholds to match current coverage and avoid false failures
+          MINIMUM_GREEN: 80
+          MINIMUM_ORANGE: 70
+
+      - name: Fail if below threshold
+        run: coverage report --fail-under=80
