@@ -52,9 +52,9 @@ jobs:
         with:
           # token param for this action expects the repo token value
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # adjust thresholds to match current coverage and avoid false failures
-          MINIMUM_GREEN: 80
+          # revert thresholds to expected target now that tests cover code
+          MINIMUM_GREEN: 90
           MINIMUM_ORANGE: 70
 
       - name: Fail if below threshold
-        run: coverage report --fail-under=80
+        run: coverage report --fail-under=90
